@@ -1,7 +1,7 @@
 {
   "name": "temp-react-app",
   "version": "0.1.0",
-  "homepage": "https://gameguild-gg.github.io/catch-the-cat-ai-competition",
+  "homepage": "https://Logi-Bear.github.io/catch-the-cat-ai-competition",
   "private": true,
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.3",
