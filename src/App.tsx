@@ -1,10 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CompetitionReportComponent } from './components/CompetitionReport';
 import { Arena } from './arena/Arena';
+import { PlayVsBot } from './play/PlayVsBot';
 import { Button } from './components/ui/button';
 
 function App() {
-  const [tab, setTab] = useState<'leaderboard' | 'arena'>('leaderboard');
+  const [tab, setTab] = useState<'leaderboard' | 'arena' | 'play'>('leaderboard');
+  const [deepLink] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const cat = params.get('cat');
+    const catcher = params.get('catcher');
+    if (cat) return { bot: cat, role: 'catcher' as const };
+    if (catcher) return { bot: catcher, role: 'cat' as const };
+    return undefined;
+  });
+
+  useEffect(() => {
+    if (deepLink) setTab('play');
+  }, [deepLink]);
+
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -26,9 +40,15 @@ function App() {
           >
             Arena
           </Button>
+          <Button
+            variant={tab === 'play' ? 'default' : 'outline'}
+            onClick={() => setTab('play')}
+          >
+            Play vs Bot
+          </Button>
         </div>
 
-        {tab === 'leaderboard' ? <CompetitionReportComponent /> : <Arena />}
+        {tab === 'leaderboard' ? <CompetitionReportComponent /> : tab === 'arena' ? <Arena /> : <PlayVsBot deepLink={deepLink} />}
       </div>
     </div>
   );

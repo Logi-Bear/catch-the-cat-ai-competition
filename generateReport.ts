@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import { Board, MatchReport, Position, Turn, MoveReport, UserScore, CompetitionReport } from './src/board';
+import { SEASON_USERS } from './src/season';
 
 // Track active child processes for cleanup
 
@@ -25,39 +26,7 @@ export class UserRepository {
   username: string = '';
   repo: string = '';
 }
-export let users: UserRepository[] = [{
-    username: 'ColinSkaarup',
-    repo: 'https://github.com/ColinSkaarup/mobagen',
-},
-{
-  username: "AaronArchambault",
-  repo: "https://github.com/AaronArchambault/mobagen.git"
-},
-{
-  username: "lukehinojosa",
-  repo: "https://github.com/lukehinojosa/mobagen"
-},
-{
-  username: "JordanCoolbeth",
-  repo: "https://github.com/dewdrop-ripple/GPR-340-mobagen.git"
-},
-{
-  username: "RafaSolis",
-  repo: "https://github.com/solunabeeboo/mobagen"
-},
-{
-  username: "SelinaFunk",
-  repo: "https://github.com/Selina-Funk/mobagen"
-},                                    
-{
-  username: "LoganMcCandless",
-  repo: "https://github.com/Logi-Bear/mobagen"
-},
-{
-  username: "omanchek",
-  repo: "https://github.com/omanchek/mobagen-gpr340.git"
-}
-];
+export let users: UserRepository[] = SEASON_USERS;
 
 interface MoveResult {
   move: Position | null;
@@ -228,16 +197,15 @@ async function runMatch(cat: UserRepository, catcher: UserRepository, initialSta
   report.initialState.turn = board.turn;
   let moveCount = 0;
   const maxMoves = board.side * board.side; // Maximum possible moves
-  
+
   console.log(`Running match: ${cat.username} (cat) vs ${catcher.username} (catcher)`);
-  
   while (moveCount < maxMoves) {
     const gameResult = board.getGameResult();
     if (gameResult.isOver) {
       console.log(`Game over: ${gameResult.winner} wins - ${gameResult.reason}`);
       break;
     }
-    
+
     const currentUser = board.turn === Turn.Cat ? cat : catcher;
     const moveResult = await requestMove(board, currentUser);
     
@@ -255,9 +223,9 @@ async function runMatch(cat: UserRepository, catcher: UserRepository, initialSta
       // Player made an invalid move or timed out
       moveReport.error = moveResult.error || 'Invalid move';
       report.moves.push(moveReport);
-      
+
       console.log(`${currentUser.username} (${board.turn}) failed: ${moveReport.error}`);
-      
+
       // The other player wins
       if (board.turn === Turn.Cat) {
         report.catcherMoveScore = maxMoves - moveCount; // Catcher wins = higher score
@@ -283,12 +251,11 @@ async function runMatch(cat: UserRepository, catcher: UserRepository, initialSta
       board.move(moveResult.move);
       
       moveCount++;
-      console.log(`${currentUser.username} (${moveReport.turn}) moved to (${moveResult.move.x}, ${moveResult.move.y}) in ${moveResult.time}ms`);
-      
+
     } catch (error) {
       moveReport.error = error instanceof Error ? error.message : String(error);
       console.log(`${currentUser.username} (${board.turn}) made invalid move (${moveResult.move.x}, ${moveResult.move.y}): ${error instanceof Error ? error.message : String(error)}`);
-      
+
       // Add the invalid move to the report before breaking
       report.moves.push(moveReport);
       
@@ -318,7 +285,7 @@ async function runMatch(cat: UserRepository, catcher: UserRepository, initialSta
     }
   }
   
-  console.log(`Match completed: Cat score: ${report.catMoveScore}, Catcher score: ${report.catcherMoveScore}`);
+  console.log(`Match completed: ${cat.username} (cat) vs ${catcher.username} (catcher) — Cat score: ${report.catMoveScore}, Catcher score: ${report.catcherMoveScore}`);
   return report;
 }
 
@@ -433,8 +400,8 @@ function optimizeCompetitionReport(report: CompetitionReport): any {
     }
   }));
 
-  // Optimize high scores (limit to top 10 to protect underperforming students)
-  const optimizedHighScores = report.highScores.slice(0, 10).map(score => ({
+  // Optimize high scores (limit to top 5 to protect underperforming students)
+  const optimizedHighScores = report.highScores.slice(0, 5).map(score => ({
     u: userMap.get(score.username),
     cms: score.catMoveScore,
     chs: score.catcherMoveScore,
@@ -506,7 +473,7 @@ async function writeOptimizedReportStream(report: CompetitionReport, filePath: s
 
     stream.write('],"highScores":');
 
-    const optimizedHighScores = report.highScores.slice(0, 10).map(score => ({
+    const optimizedHighScores = report.highScores.slice(0, 5).map(score => ({
       u: userMap.get(score.username),
       cms: score.catMoveScore,
       chs: score.catcherMoveScore,
@@ -606,7 +573,7 @@ async function main() {
   }
 
   // leave only the users that have a valid compilation
-  users = users.filter(user => fs.existsSync(`repos/${user.username}/build/bin/catchthecat`));
+  users = SEASON_USERS.filter(user => fs.existsSync(`repos/${user.username}/build/bin/catchthecat`));
 
   if (buildFailures.length > 0) {
     console.warn(`⚠️ ${buildFailures.length} bot(s) failed to configure/build: ${buildFailures.join(', ')}`);
@@ -623,7 +590,6 @@ async function main() {
     const board = Board.generateRandomBoard(21);
     if (!initialStates.includes(board)) {
       initialStates.push(board);
-      console.log(`Generated board ${initialStates.length}/8`);
     }
   }
 
@@ -666,12 +632,12 @@ async function main() {
     return bMoves - aMoves;
   });
 
-  // Determine top-10 users and partition matches
-  const top10 = new Set(userScores.slice(0, 10).map(s => s.username));
+  // Determine top-5 users and partition matches
+  const top5 = new Set(userScores.slice(0, 5).map(s => s.username));
   const visibleMatches: MatchReport[] = [];
   const protectedMatches: MatchReport[] = [];
   for (const m of sortedMatches) {
-    if (!top10.has(m.cat) || !top10.has(m.catcher)) {
+    if (!top5.has(m.cat) || !top5.has(m.catcher)) {
       protectedMatches.push(m);
     } else {
       visibleMatches.push(m);
@@ -688,7 +654,7 @@ async function main() {
   
   const competitionReport = new CompetitionReport();
   competitionReport.matches = finalMatches;
-  competitionReport.highScores = userScores.slice(0, 10);
+  competitionReport.highScores = userScores.slice(0, 5);
   
   // Generate optimized JSON report for further analysis
   // const optimizedReport = optimizeCompetitionReport(competitionReport);

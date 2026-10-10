@@ -583,9 +583,9 @@ export function CompetitionReportComponent({ reportData }: CompetitionReportProp
       {/* Leaderboard */}
       <Card>
         <CardHeader>
-          <CardTitle>🥇 Top 10 Leaderboard</CardTitle>
+          <CardTitle>🥇 Top 5 Leaderboard</CardTitle>
           <CardDescription>
-            Top 8 players ranked by total score (normalized by board size with time penalties)
+            Top 5 players ranked by total score (normalized by board size with time penalties)
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -605,7 +605,7 @@ export function CompetitionReportComponent({ reportData }: CompetitionReportProp
                 </TableRow>
               </TableHeader>
             <TableBody>
-              {sortedScores.slice(0, 10).map((score, index) => (
+              {sortedScores.slice(0, 5).map((score, index) => (
                 <TableRow key={score.username}>
                   <TableCell className="font-medium">
                     {index === 0 ? (
